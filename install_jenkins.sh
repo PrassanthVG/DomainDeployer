@@ -49,8 +49,8 @@ install_debian() {
     info "Updating package lists..."
     apt-get update -y -q > /dev/null || true
     
-    info "Installing prerequisites (Java 17, wget, curl, gnupg)..."
-    apt-get install -y -q openjdk-17-jre wget curl gnupg ufw > /dev/null
+    info "Installing prerequisites (Java 21, wget, curl, gnupg)..."
+    apt-get install -y -q openjdk-21-jre wget curl gnupg ufw > /dev/null
 
     info "Adding Jenkins repository key (2026)..."
     curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key | tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
@@ -77,13 +77,13 @@ install_rhel() {
     info "Cleaning up old Jenkins repository configuration..."
     rm -f /etc/yum.repos.d/jenkins.repo
     
-    info "Installing prerequisites (Java 17, wget)..."
+    info "Installing prerequisites (Java 21, wget)..."
     if command -v dnf > /dev/null; then
         PM="dnf"
     else
         PM="yum"
     fi
-    $PM install -y -q java-17-openjdk wget firewalld > /dev/null
+    $PM install -y -q java-21-openjdk wget firewalld > /dev/null
 
     info "Adding Jenkins repository..."
     wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo -q
