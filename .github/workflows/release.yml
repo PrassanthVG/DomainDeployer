@@ -1,0 +1,49 @@
+name: Create Release on Push to Main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build Zip and Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate Release Tag & Name
+        id: vars
+        run: |
+          TAG_NAME="v1.0.${{ github.run_number }}"
+          RELEASE_TITLE="Release $TAG_NAME"
+          ZIP_NAME="release-${{ github.run_number }}.zip"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "release_title=$RELEASE_TITLE" >> "$GITHUB_OUTPUT"
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Create Zip Archive
+        run: |
+          # Zip the entire repository, excluding the .git directory and the zip file itself if present
+          zip -r "${{ steps.vars.outputs.zip_name }}" . -x "*.git*"
+
+      - name: Create GitHub Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag_name }}
+          name: ${{ steps.vars.outputs.release_title }}
+          body: |
+            Automated release generated on push to `main` branch.
+            - Commit: `${{ github.sha }}`
+            - Workflow Run: `${{ github.run_id }}`
+          files: ${{ steps.vars.outputs.zip_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -149,6 +149,9 @@ configure_jenkins_permissions() {
     info "Restarting Jenkins to apply group permissions..."
     systemctl restart jenkins > /dev/null || true
     
+    info "Verifying Jenkins can run Docker commands..."
+    sudo -u jenkins docker ps > /dev/null 2>&1 && success "Jenkins can successfully execute docker commands." || warn "Could not verify Jenkins Docker access automatically."
+    
     success "Jenkins user has been granted full passwordless root access and Docker permissions."
 }
 
