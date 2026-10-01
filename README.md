@@ -1,10 +1,43 @@
-# Autonomous Deployment Scripts
+# DomainDeployer
 
-This directory contains a collection of autonomous deployment scripts for setting up essential infrastructure and dependencies on fresh Linux Virtual Machines. 
+```text
+    ____                        _         ____             _                       
+   / __ \____  ____ ___  ____ _(_)___    / __ \___  ____  / /___  __  _____  _____ 
+  / / / / __ \/ __ `__ \/ __ `/ / __ \  / / / / _ \/ __ \/ / __ \/ / / / _ \/ ___/ 
+ / /_/ / /_/ / / / / / / /_/ / / / / / / /_/ /  __/ /_/ / / /_/ / /_/ /  __/ /     
+/_____/\____/_/ /_/ /_/\__,_/_/_/ /_/ /_____/\___/ .___/_/\____/\__, /\___/_/      
+                                                /_/            /____/              
+```
 
-These scripts are designed to be robust, automatically detect the underlying operating system (Debian/Ubuntu vs. RHEL/CentOS families), handle prerequisites, manage firewalls, and perform necessary post-installation configurations.
+```text
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ APPLICATION  : DomainDeployer (Autonomous Infrastructure Orchestrator)        │
+│ WHAT IT DOES : Multi-service provisioning tool for fresh Linux servers.       │
+│                Automatically detects OS/VM architecture, configures           │
+│                firewalls, and batch-installs Docker, Jenkins, PostgreSQL,     │
+│                and Nginx with a single interactive terminal command.          │
+├───────────────────────────────────────────────────────────────────────────────┤
+│ SIMPLE GUIDE :                                                                │
+│  1. Grant execution rights : chmod +x *.sh                                    │
+│  2. Launch Terminal UI     : sudo ./orchestrator.sh                           │
+│  3. Select services        : [Space] toggle, [a] all, [Enter] deploy          │
+└───────────────────────────────────────────────────────────────────────────────┘
+```
 
-## Scripts Overview
+This repository provides an autonomous, cross-distro infrastructure orchestration suite for setting up essential DevOps services on fresh Linux Virtual Machines. All scripts automatically detect the Linux distribution (Debian/Ubuntu vs. RHEL/CentOS/Amazon Linux families), configure local firewalls, handle VM edge cases, and perform post-installation validation.
+
+## Interactive Orchestrator (Recommended)
+
+### `orchestrator.sh`
+**Purpose:** Interactive Terminal UI (TUI) to multi-select and batch-deploy infrastructure services.
+**Features:**
+- **Terminal UI (TUI):** Built-in ANSI checkbox menu with zero external dependencies (no need to pre-install `whiptail` or `dialog`).
+- **Multi-Selection:** Use `[Space]` or direct number keys `[1-5]` to select multiple services, `[a]` to select all, and `[Enter]` to trigger automated execution.
+- **Execution Pipeline:** Sequential execution with live progress reporting, automated Nginx template detection (`ngnix.config`), error handling with pause/continue controls, and an end-of-run Summary Dashboard.
+
+---
+
+## Individual Scripts Overview
 
 ### 1. `install_docker.sh`
 **Purpose:** Installs Docker Engine and Docker Compose.
@@ -25,7 +58,7 @@ These scripts are designed to be robust, automatically detect the underlying ope
 ### 3. `install_jenkins.sh`
 **Purpose:** Installs Jenkins CI/CD server and Java dependencies.
 **Features:**
-- Installs Java 17 and Jenkins from the official Jenkins repositories.
+- Installs Java 21 (OpenJDK) and Jenkins from the official Jenkins repositories.
 - Automatically cleans up old/broken GPG keys and configures the correct repository.
 - Opens port 8080 on the local firewall (`ufw` or `firewalld`).
 - **CI/CD Ready:** Grants the `jenkins` user full passwordless `sudo` access and adds it to the `docker` group. This allows Jenkins pipelines to execute `sudo` and `docker` commands without permission errors.
@@ -46,11 +79,17 @@ These scripts are designed to be robust, automatically detect the underlying ope
 1. **Make the scripts executable:**
    Before running any script for the first time, ensure it has execution permissions:
    ```bash
-   chmod +x install_*.sh
+   chmod +x *.sh
    ```
 
-2. **Run as Root/Sudo:**
-   All scripts require root privileges to install packages and modify system configurations. Run them as follows:
+2. **Run the Interactive Orchestrator (Recommended):**
+   Launch the interactive Terminal UI to multi-select and batch deploy:
+   ```bash
+   sudo ./orchestrator.sh
+   ```
+
+3. **Or Run Individual Scripts Directly:**
+   All scripts require root privileges to install packages and modify system configurations:
    ```bash
    sudo ./install_docker.sh
    sudo ./install_postgres.sh
@@ -61,12 +100,19 @@ These scripts are designed to be robust, automatically detect the underlying ope
    
    # For Nginx custom config mode:
    sudo ./install_ngnix.sh ./ngnix.config
+
+   # For Jenkins Authentication Recovery:
+   sudo ./Jenkins_Authentication_Recovery.sh
    ```
 
-3. **VM and Cloud Considerations:**
+4. **VM and Cloud Considerations:**
    - **External Firewalls:** Ensure your cloud provider's Security Groups / Network Firewalls (e.g., AWS EC2 Security Groups, Azure NSGs) allow inbound traffic on the exposed ports (e.g., 80/8443 for Nginx, 8080 for Jenkins, 5432 for PostgreSQL).
-   - **Internal Firewalls:** The scripts will attempt to configure local OS firewalls (`ufw` or `firewalld`) automatically if they are active.
+   - **Internal Firewalls:** The scripts automatically configure local OS firewalls (`ufw` or `firewalld`) if active.
+   - **Small VM Auto-Optimization:** Low-memory VMs (< 1.5GB RAM, such as AWS `t2.micro` or 1GB VPS instances) are automatically detected; Jenkins creates a swap file and tunes JVM heap size to prevent out-of-memory kernel termination.
+   - **SELinux Policies:** On RHEL/CentOS/Rocky/Alma/Amazon Linux, reverse proxy network connect policies (`httpd_can_network_connect`) are automatically enabled.
 
-## Supported Operating Systems
-- **Debian-based:** Ubuntu, Debian, Linux Mint
-- **RHEL-based:** CentOS, RHEL, Rocky Linux, AlmaLinux (and Fedora for Jenkins)
+## Supported Operating Systems & Architectures
+- **Debian Family:** Ubuntu (18.04, 20.04, 22.04, 24.04), Debian (10, 11, 12), Linux Mint, Pop!_OS, Elementary OS, Kali
+- **RHEL Family:** CentOS (7, 8, Stream 9), RHEL (7, 8, 9), Rocky Linux, AlmaLinux, Fedora
+- **Cloud Distributions:** Amazon Linux 2 & Amazon Linux 2023, Oracle Linux (OL 7, 8, 9)
+- **Architectures:** `x86_64` (`amd64`), `aarch64` (`arm64` / AWS Graviton / Apple Silicon VMs), `armhf`
