@@ -117,6 +117,16 @@ install_debian() {
     info "Cleaning up obsolete repository lists if any..."
     rm -f /etc/apt/sources.list.d/jenkins.list
 
+    # Auto-repair known misconfigured Docker Debian repository entry if present from previous runs
+    if [ -f /etc/apt/sources.list.d/docker.list ]; then
+        if grep -q "download.docker.com/linux/debian" /etc/apt/sources.list.d/docker.list; then
+            if [ "$OS" = "ubuntu" ] || [[ "$LIKE" == *"ubuntu"* ]] || grep -qE "noble|jammy|focal|bionic" /etc/apt/sources.list.d/docker.list; then
+                info "Auto-repairing invalid Docker Debian repository entry in /etc/apt/sources.list.d/docker.list..."
+                sed -i 's|download.docker.com/linux/debian|download.docker.com/linux/ubuntu|g' /etc/apt/sources.list.d/docker.list
+            fi
+        fi
+    fi
+
     info "Updating package lists..."
     apt-get update -y -q > /dev/null || true
 
@@ -136,7 +146,7 @@ install_debian() {
     echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list > /dev/null
 
     info "Updating package lists with Jenkins repo..."
-    apt-get update -y -q > /dev/null
+    apt-get update -y -q > /dev/null || true
 
     info "Installing Jenkins package..."
     apt-get install -y -q jenkins > /dev/null

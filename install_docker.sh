@@ -80,6 +80,15 @@ install_debian() {
     info "Detected Debian/Ubuntu family ($OS, $DOCKER_ARCH)..."
     wait_for_package_locks
 
+    # Clean up obsolete or invalid Docker repository configurations if present
+    if [ -f /etc/apt/sources.list.d/docker.list ]; then
+        if grep -q "download.docker.com/linux/debian" /etc/apt/sources.list.d/docker.list; then
+            if [ "$OS" = "ubuntu" ] || [[ "$LIKE" == *"ubuntu"* ]] || grep -qE "noble|jammy|focal|bionic" /etc/apt/sources.list.d/docker.list; then
+                rm -f /etc/apt/sources.list.d/docker.list
+            fi
+        fi
+    fi
+
     info "Removing conflicting or obsolete packages..."
     for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
         apt-get remove -y -q "$pkg" > /dev/null 2>&1 || true
@@ -93,7 +102,9 @@ install_debian() {
 
     # Resolve distro name for Docker repo URL
     local DOCKER_DISTRO="ubuntu"
-    if [ "$OS" = "debian" ] || [[ "$LIKE" == *"debian"* && "$LIKE" != *"ubuntu"* ]]; then
+    if [ "$OS" = "ubuntu" ] || [[ "$LIKE" == *"ubuntu"* ]]; then
+        DOCKER_DISTRO="ubuntu"
+    elif [ "$OS" = "debian" ] || [[ "$LIKE" == *"debian"* ]]; then
         DOCKER_DISTRO="debian"
     fi
 
@@ -106,7 +117,7 @@ install_debian() {
         CODENAME=$(lsb_release -cs 2>/dev/null || true)
     fi
     if [ -z "$CODENAME" ]; then
-        if [ "$DOCKER_DISTRO" = "debian" ]; then CODENAME="bookworm"; else CODENAME="jammy"; fi
+        if [ "$DOCKER_DISTRO" = "debian" ]; then CODENAME="bookworm"; else CODENAME="noble"; fi
     fi
 
     info "Adding Docker GPG key..."

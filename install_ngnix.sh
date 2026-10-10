@@ -77,6 +77,16 @@ install_nginx() {
 
     if ! command -v nginx > /dev/null 2>&1; then
         if [[ "$OS" == "ubuntu" || "$OS" == "debian" || "$LIKE" == *"debian"* ]]; then
+            # Auto-repair known misconfigured Docker Debian repository entry if present from previous runs
+            if [ -f /etc/apt/sources.list.d/docker.list ]; then
+                if grep -q "download.docker.com/linux/debian" /etc/apt/sources.list.d/docker.list; then
+                    if [ "$OS" = "ubuntu" ] || [[ "$LIKE" == *"ubuntu"* ]] || grep -qE "noble|jammy|focal|bionic" /etc/apt/sources.list.d/docker.list; then
+                        info "Auto-repairing invalid Docker Debian repository entry in /etc/apt/sources.list.d/docker.list..."
+                        sed -i 's|download.docker.com/linux/debian|download.docker.com/linux/ubuntu|g' /etc/apt/sources.list.d/docker.list
+                    fi
+                fi
+            fi
+
             info "Installing Nginx via APT..."
             apt-get update -y -q > /dev/null || true
             apt-get install -y -q nginx curl ufw > /dev/null
